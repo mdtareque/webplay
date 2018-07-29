@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js"></script>
+    <script src="/Chart.PieceLabel.js"></script>
+    <title>chart.js sample</title>
+    <style>
+        .charts {
+            border: 1px solid black;
+            margin: 4px;
+            height: 70%;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Chart.js demo</h1>
+    <div class="chart-container">
+        Select type of chart:
+        <select id="control">
+            <optgroup label="Line/Bar">
+                <option value="bar">Bar</option>
+                <option value="line">Line</option>
+                <option value="horizontalBar">Horizontal Bar</option>
+            </optgroup>
+            <optgroup label="Circular">
+                <option value="pie">Pie</option>
+                <option value="radar">Radar</option>
+                <option value="polarArea">Polar Area</option>
+                <option value="doughnut">DoughNut</option>
+            </optgroup>
+        </select>
+        <canvas id="mychart" class="charts"></canvas>
+    </div>
+
+    <div class="notes">
+        <h2>Things learnt</h2>
+        <ul>
+            <li>Barchart and piechart legends display setting is mutually exclusive</li>
+            <li>Need to hook window.onbeforeprint event
+                <code>function beforePrintHandler () {
+                        for (var id in Chart.instances) {
+                          Chart.instances[id].resize()
+                        }
+                      }</code>
+            </li>
+            <li>Can apply image as background fill pattern http://www.chartjs.org/docs/latest/general/colors.html#patterns-and-gradients</li>
+            <li>https://github.com/ashiguruma/patternomaly to create patterns for color blind people</li>
+            <li>Can configure callbacks for legend creation, resize, x/y ticks</li>
+        </ul>
+    </div>
+
+
+    <script>
+        let mchart = document.getElementById('mychart').getContext('2d');
+
+        // Global options
+        Chart.defaults.global.defaultFontFamily = 'Lato';
+        Chart.defaults.global.defaultFontSize = 14;
+        Chart.defaults.global.defaultFontColor = '#777';
+        Chart.defaults.global.elements.point.radius = 5;
+        Chart.defaults.global.elements.point.hoverRadius = 7;
+        Chart.defaults.global.elements.point.hitRadius = 12;
+        Chart.defaults.global.elements.point.pointStyle = 'circle';// crossRot, star, dash, triangle
+        Chart.defaults.global.elements.line.tension = 0.5;
+
+        let chartTitle = 'Largest cities in India';
+        let backgroundColorArray = [
+            'rgba(255, 99, 132, 0.6)',
+            'rgba( 54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)'
+        ];
+        var massPopChartData = {
+            labels: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai'],
+            datasets: [{
+                label: 'Population',
+                fill: false,
+                data: [
+                    12442373, 11034555, 8443675, 6993262, 4646732
+                ],
+                backgroundColor: backgroundColorArray, //'rgba(75, 192, 192, 0.6)',
+                borderWidth: 1,
+                borderColor: '#777',
+                hoverBorderWidth: 3,
+                hoverBorderColor: '#000',
+            }]
+        };
+        var massPopChartOptions = {
+            title: {
+                display: true,
+                text: chartTitle,
+                fontSize: 22
+            },
+            legend: {
+                display: false,
+                position: 'bottom'
+            },
+            layout: {
+                padding: {
+                    left: 5,
+                    right: 5,
+                    bottom: 2,
+                    top: 2,
+                }
+            },
+            tooltips: {
+                enabled: true,
+                mode: 'nearest'
+            },
+            scales: {},
+            pieceLabel: {}
+        };
+        
+        let massPopChart = new Chart(mchart, {
+            type: 'bar', //bar, horizontalBar, pie, line, doughNut, radar, polarArea
+            data: massPopChartData,
+            options: massPopChartOptions
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('control').onchange = changeEventHandler;
+        }, false);
+
+        let circularCharts = ["pie", "polarArea", "doughnut"];
+        function changeEventHandler(event) {
+            var chartType = event.target.value;
+            console.log("control selected " + chartType);
+            massPopChart.destroy();
+            if (circularCharts.indexOf(chartType) > -1) {
+                massPopChartOptions.legend.display = true;
+                console.log("it's pie chart, showing legends" + JSON.stringify(massPopChartOptions.legend));
+                massPopChartOptions.pieceLabel = {
+                    render: 'label',
+                    fontColor: '#000',
+                    position: 'outside'
+                }
+            } else {
+                massPopChartOptions.legend.display = false;
+            }
+            if (chartType === "bar") {
+                massPopChartOptions.scales.yAxes = [{
+                    ticks: {
+                        beginAtZero: true,
+                        userCallback: function (value, index, values) {
+                            value = value.toString();
+                            value = value.split(/(?=(?:...)*$)/);
+                            value = value.join(',');
+                            return value;
+                        }
+                    }
+                }];
+            } else {
+                massPopChartOptions.scales.yAxes = [];
+            }
+
+            if (chartType === "radar") {
+                massPopChartData.datasets[0].fill = true;
+                massPopChartData.datasets[0].backgroundColor = "rgba(75, 192, 192, 0.6)";
+            } else {
+                massPopChartData.datasets[0].fill = false;
+                massPopChartData.datasets[0].backgroundColor = backgroundColorArray;
+            }
+
+            massPopChartOptions.title.text = chartTitle + " - " + chartType;
+
+            massPopChart = new Chart(mchart, {
+                type: chartType,
+                data: massPopChartData,
+                options: massPopChartOptions
+            });
+        }
+    </script>
+</body>
+
+</html>
